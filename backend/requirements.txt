@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+fastapi-jwt
+pydantic-settings
+sqlalchemy[asyncio]
+aiosqlite
+bcrypt
+python-multipart
+elasticsearch
+redis
+openai
+# Switch to asyncpg when moving to PostgreSQL in production:
+# asyncpg
