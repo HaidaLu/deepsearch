@@ -5,11 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9a2e89c7-363b-42c8-9228-370c3385145c" name="Changes" comment="add gitignore">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app_main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/config.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/db/database.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/db/database.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/deepsearch.db" beforeDir="false" afterPath="$PROJECT_DIR$/backend/deepsearch.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/router/chat_rt.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/router/chat_rt.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/router/history_rt.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/router/history_rt.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/services/chat_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/services/chat_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/services/document_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/services/document_service.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,30 +38,18 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/Users/haidalu/Documents/大模型/RAG/Project/deepsearch"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/haidalu/Documents/大模型/RAG/Project/deepsearch&quot;
   }
-}]]></component>
-  <component name="RunManager">
-    <configuration default="true" type="JetRunConfigurationType">
-      <module name="deepsearch" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
-      <module name="deepsearch" />
-      <option name="filePath" />
-      <method v="2" />
-    </configuration>
-  </component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>

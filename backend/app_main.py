@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from db.database import init_db
+from db.es_client import ensure_index_exists
 from exceptions.auth import AuthError
 from router import chat_rt, history_rt, user_rt
 
@@ -44,6 +45,7 @@ app.include_router(history_rt.router)   # /get_sessions, /get_messages, /upload_
 @app.on_event("startup")
 async def on_startup():
     await init_db()
+    await ensure_index_exists()
 
 @app.get("/health")
 def health_check():

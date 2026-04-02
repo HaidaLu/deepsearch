@@ -8,8 +8,7 @@ class Settings(BaseSettings):
     # Server
     ALLOWED_ORIGINS: list[str] = ["http://localhost:5173"]
 
-    # Database — SQLite for local dev, switch to PostgreSQL in production:
-    # DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/deepsearch
+    # Database — SQLite for local dev without Docker, PostgreSQL in production
     DATABASE_URL: str = "sqlite+aiosqlite:///./deepsearch.db"
 
     # Elasticsearch
@@ -26,6 +25,14 @@ class Settings(BaseSettings):
     # LLM providers
     OPENAI_API_KEY: str = ""
     DASHSCOPE_API_KEY: str = ""
+    DASHSCOPE_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    LLM_PROVIDER: str = "dashscope"  # "openai" or "dashscope"
+    LLM_MODEL: str = "deepseek-r1"
+
+    # Embedding — same DashScope key and base URL, different model
+    EMBEDDING_API_KEY: str = ""  # falls back to DASHSCOPE_API_KEY if empty
+    EMBEDDING_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    EMBEDDING_MODEL: str = "text-embedding-v4"
 
     class Config:
         env_file = ".env"
