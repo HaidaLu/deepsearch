@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="9a2e89c7-363b-42c8-9228-370c3385145c" name="Changes" comment="add gitignore">
+      <change beforePath="$PROJECT_DIR$/backend/db/database.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/db/database.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/deepsearch.db" beforeDir="false" afterPath="$PROJECT_DIR$/backend/deepsearch.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/router/chat_rt.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/router/chat_rt.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/router/history_rt.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/router/history_rt.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/services/chat_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/services/chat_service.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
+  <component name="ProjectId" id="3BixB4pIujxFX8N91ueQfuEHn8d" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/Users/haidalu/Documents/大模型/RAG/Project/deepsearch"
+  }
+}]]></component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="deepsearch" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="deepsearch" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-26cb7f24e5b0-intellij.indexing.shared.core-IU-253.29346.138" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9a2e89c7-363b-42c8-9228-370c3385145c" name="Changes" comment="" />
+      <created>1774985553871</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1774985553871</updated>
+    </task>
+    <task id="LOCAL-00001" summary="Feature Initial Front end code">
+      <option name="closed" value="true" />
+      <created>1774985722490</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1774985722491</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Feature backend add skeleton and finish login/register function">
+      <option name="closed" value="true" />
+      <created>1774993621241</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1774993621241</updated>
+    </task>
+    <task id="LOCAL-00003" summary="add gitignore">
+      <option name="closed" value="true" />
+      <created>1774993822931</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1774993822931</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Feature Initial Front end code" />
+    <MESSAGE value="Feature backend add skeleton and finish login/register function" />
+    <MESSAGE value="add gitignore" />
+    <option name="LAST_COMMIT_MESSAGE" value="add gitignore" />
+  </component>
+</project>
