@@ -21,7 +21,7 @@ async def create_session(
     current_user: dict = Depends(get_current_user),
 ):
     """Create a new chat session. Java: @PostMapping("/session")"""
-    return await ChatService(db).create_session(current_user["username"])
+    return await ChatService(db).create_session(current_user["user_id"])
 
 
 @router.post("/chat_on_docs")

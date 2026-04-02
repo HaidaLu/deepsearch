@@ -22,7 +22,9 @@ class Base(DeclarativeBase):
 async def init_db():
     """Create all tables on startup (dev only — use Alembic migrations in prod)."""
     # Import all models here so Base.metadata knows about them
-    import models.user  # noqa: F401
+    import models.user     # noqa: F401
+    import models.session  # noqa: F401
+    import models.message  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

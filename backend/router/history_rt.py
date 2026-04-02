@@ -24,7 +24,7 @@ async def get_sessions(
     current_user: dict = Depends(get_current_user),
 ):
     """List all sessions for the current user. Java: @GetMapping("/sessions")"""
-    return await ChatService(db).get_sessions(current_user["username"])
+    return await ChatService(db).get_sessions(current_user["user_id"])
 
 
 @router.get("/get_messages")
