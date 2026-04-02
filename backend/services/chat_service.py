@@ -11,11 +11,22 @@ import json
 import uuid
 from typing import AsyncGenerator
 
+from openai import AsyncOpenAI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.config import settings
 from models.message import Message
 from models.session import Session
+
+# Both OpenAI and DashScope/DeepSeek use the same SDK — just different base_url
+if settings.LLM_PROVIDER == "openai":
+    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+else:
+    client = AsyncOpenAI(
+        api_key=settings.DASHSCOPE_API_KEY,
+        base_url=settings.DASHSCOPE_BASE_URL,
+    )
 
 
 class ChatService:
@@ -72,18 +83,49 @@ class ChatService:
         self, session_id: str, message: str, username: str
     ) -> AsyncGenerator[str, None]:
         """
-        Core RAG pipeline — yields SSE chunks so the frontend can stream the response.
+        Chat pipeline (no RAG yet) — yields SSE chunks to the frontend.
 
-        Steps (from chart.svg):
-          1. RetrievalStep  → query Elasticsearch via RAGDealer + HybridRanking
-          2. PromptConstruct → build prompt with retrieved context
-          3. LLMCall         → call OpenAI / DashScope, stream tokens
-          4. SaveToDB        → persist question + answer to MessageTable
+        Steps:
+          1. Save user question to DB immediately
+          2. TODO: RetrievalStep (RAG) — skipped for now
+          3. Call OpenAI and stream tokens back
+          4. Save full answer to DB
         """
-        # TODO: implement full RAG pipeline
-        # Placeholder: yield a single SSE message
-        payload = json.dumps({"content": "Hello! Backend streaming not yet implemented."})
-        yield f"data: {payload}\n\n"
+        # ── Step 1: Save user question to DB ─────────────────────────────────
+        message_id = str(uuid.uuid4())
+        msg_row = Message(
+            message_id=message_id,
+            session_id=session_id,
+            user_question=message,
+            model_answer="",
+        )
+        self.db.add(msg_row)
+        await self.db.commit()
+
+        # ── Step 2: Retrieve relevant chunks (TODO — RAG pipeline) ───────────
+
+        # ── Step 3: Call LLM + stream tokens back to frontend ─────────────────
+        full_answer = ""
+        try:
+            stream = await client.chat.completions.create(
+                model=settings.LLM_MODEL,
+                messages=[{"role": "user", "content": message}],
+                stream=True,
+            )
+            async for chunk in stream:
+                token = chunk.choices[0].delta.content or ""
+                if token:
+                    full_answer += token
+                    yield f"data: {json.dumps({'content': token})}\n\n"
+        except Exception as e:
+            error_msg = f"[LLM Error: {e}]"
+            full_answer = error_msg
+            yield f"data: {json.dumps({'content': error_msg})}\n\n"
+
+        # ── Step 4: Save full answer to DB ────────────────────────────────────
+        msg_row.model_answer = full_answer
+        await self.db.commit()
+
         yield "data: [DONE]\n\n"
 
     async def quick_parse(self, session_id: str) -> dict:
