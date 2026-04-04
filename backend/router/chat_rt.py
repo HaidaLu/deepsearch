@@ -11,6 +11,7 @@ from core.auth import get_current_user
 from db.database import get_db
 from models.schemas import ChatRequest, CreateSessionResponse
 from services.chat_service import ChatService
+from services.quick_parse_service import QuickParseService
 
 router = APIRouter(tags=["Chat"])
 
@@ -51,21 +52,21 @@ async def chat_on_docs(
 async def quick_parse(
     session_id: str = Query(...),
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
     """
     Quick-parse a file attached directly in chat.
+    Text stored in Redis (2hr TTL), injected into prompt on next message.
     From chart.svg: QuickParse → QuickParseService → DocumentParsers → Redis
     """
-    return await ChatService(db).quick_parse(session_id, file)
+    return await QuickParseService().parse_and_store(session_id, file)
 
 
 @router.get("/sessions/{session_id}/documents")
 async def get_session_documents(
     session_id: str,
-    db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Get documents attached to a specific session."""
-    return await ChatService(db).get_session_documents(session_id)
+    """Return files currently attached to a session (from Redis)."""
+    files = await QuickParseService().get_files(session_id)
+    return {"documents": files, "has_documents": len(files) > 0}

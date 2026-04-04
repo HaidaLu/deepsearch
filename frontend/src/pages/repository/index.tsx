@@ -31,7 +31,7 @@ export default function Index() {
           ...item,
           $suffix: item.file_name.split('.').pop() as FileIcon,
           id: index + 1,
-          number: 0,
+          number: (item as any).chunk_count ?? 0,
           method: 'General',
           enable: true,
           status: 'success',
