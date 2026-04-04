@@ -65,9 +65,9 @@ async def get_files(
     return await DocumentService(db).get_files(current_user["username"])
 
 
-@router.delete("/delete_file")
+@router.delete("/delete_file/{file_name}")
 async def delete_file(
-    file_name: str = Query(...),
+    file_name: str,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
