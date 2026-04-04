@@ -20,6 +20,7 @@ from core.config import settings
 from db.es_client import es
 from models.message import Message
 from models.session import Session
+from services.quick_parse_service import QuickParseService
 
 # Embedding client — same setup as document_service, reused for question embedding
 embedding_client = AsyncOpenAI(
@@ -94,8 +95,6 @@ class ChatService:
         Convert the user's question into a 1024-dim vector using DashScope.
         Same model as document embedding so vectors are in the same space
         and similarity comparison works correctly.
-
-        Java equivalent: embeddingService.embed(String question)
         """
         response = await embedding_client.embeddings.create(
             model=settings.EMBEDDING_MODEL,
@@ -114,9 +113,7 @@ class ChatService:
         - KNN finds chunks semantically similar to the question vector
         - BM25 finds chunks containing the same keywords
         - Both are filtered by username so users only see their own documents
-        - Results are merged and deduplicated by ES's RRF (Reciprocal Rank Fusion)
-
-        Java equivalent: elasticsearchRepository.hybridSearch(questionVector, questionText, username)
+        - Results are merged and deduplicated manually (RRF requires paid ES license)
 
         Returns list of: { text, filename, chunk_index, score }
         """
@@ -167,37 +164,40 @@ class ChatService:
                 }
 
         # Sort by score descending, return top_k
-        chunks = sorted(seen_ids.values(), key=lambda x: x["score"], reverse=True)[:top_k]
-        return chunks
+        return sorted(seen_ids.values(), key=lambda x: x["score"], reverse=True)[:top_k]
 
     # ── RAG Step 3: PromptConstruct ───────────────────────────────────────────
 
-    def _build_prompt(self, question: str, chunks: list[dict]) -> list[dict]:
+    def _build_prompt(
+        self, question: str, chunks: list[dict], quick_text: str = ""
+    ) -> list[dict]:
         """
         Build the messages array for the LLM call.
 
-        If chunks were retrieved, inject them as context in a system message.
-        If no chunks found (user hasn't uploaded any docs), fall back to plain chat.
+        Context sources (both optional):
+          - chunks     : top-K relevant chunks retrieved from Elasticsearch (knowledge base)
+          - quick_text : full text of files attached directly in this chat session (Redis)
 
-        Returns OpenAI-format messages: [{"role": ..., "content": ...}, ...]
-
-        Java equivalent: PromptBuilder.build(String question, List<Chunk> context)
+        Falls back to plain chat if neither source has content.
         """
-        if not chunks:
-            # No documents uploaded — plain chat fallback
-            return [{"role": "user", "content": question}]
-
-        # Format each chunk as a numbered reference
-        context_text = "\n\n".join(
+        kb_context = "\n\n".join(
             f"[{i+1}] (from {c['filename']}):\n{c['text']}"
             for i, c in enumerate(chunks)
         )
 
+        sections = []
+        if kb_context:
+            sections.append(f"## Knowledge Base\n{kb_context}")
+        if quick_text:
+            sections.append(f"## Attached Files\n{quick_text}")
+
+        if not sections:
+            return [{"role": "user", "content": question}]
+
         system_prompt = (
             "You are a helpful assistant. Answer the user's question based on "
-            "the provided context documents. If the answer is not in the context, "
-            "say so honestly.\n\n"
-            f"Context:\n{context_text}"
+            "the provided context. If the answer is not in the context, say so honestly.\n\n"
+            + "\n\n".join(sections)
         )
 
         return [
@@ -205,17 +205,94 @@ class ChatService:
             {"role": "user",   "content": question},
         ]
 
+    # ── Post-answer: generate recommended follow-up questions ─────────────────
+
+    async def _generate_recommended_questions(
+        self, question: str, answer: str
+    ) -> list[str]:
+        """
+        Ask the LLM for 3 short follow-up questions based on this Q&A exchange.
+        Returns a list of up to 3 question strings.
+        Best-effort: returns [] on any failure.
+        """
+        prompt = (
+            "Based on this Q&A, generate exactly 3 short follow-up questions "
+            "the user might want to ask next.\n"
+            f"Question: {question}\n"
+            f"Answer: {answer[:500]}\n\n"
+            "Output ONLY a JSON array of 3 strings, no explanation:\n"
+            '["Question 1?", "Question 2?", "Question 3?"]'
+        )
+        try:
+            resp = await client.chat.completions.create(
+                model=settings.LLM_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                stream=False,
+                temperature=0.7,
+            )
+            raw = resp.choices[0].message.content.strip()
+            # Strip markdown code fences if present
+            if "```" in raw:
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+            questions = json.loads(raw)
+            if isinstance(questions, list):
+                return [str(q) for q in questions[:3]]
+        except Exception:
+            pass
+        return []
+
+    # ── Post-answer: auto-name session from first question ────────────────────
+
+    async def _maybe_name_session(self, session_id: str, question: str) -> None:
+        """
+        If this session still has the default name "New Conversation",
+        generate a short title (max 6 words) from the first user question.
+        Runs after the main answer streams — never blocks the chat.
+        """
+        result = await self.db.execute(
+            select(Session).where(Session.session_id == session_id)
+        )
+        session = result.scalar_one_or_none()
+        if session is None or session.session_name != "New Conversation":
+            return  # already named, skip
+
+        prompt = (
+            "Generate a very short title (max 6 words) for a chat conversation "
+            f'that starts with this question: "{question}"\n\n'
+            "Output only the title, no quotes, no punctuation at the end."
+        )
+        try:
+            resp = await client.chat.completions.create(
+                model=settings.LLM_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                stream=False,
+                temperature=0.5,
+            )
+            name = resp.choices[0].message.content.strip()[:80]
+            if name:
+                session.session_name = name
+                await self.db.commit()
+        except Exception:
+            pass  # naming is best-effort, never raise
+
+    # ── Main pipeline ─────────────────────────────────────────────────────────
+
     async def stream_chat(
         self, session_id: str, message: str, username: str
     ) -> AsyncGenerator[str, None]:
         """
-        Chat pipeline (no RAG yet) — yields SSE chunks to the frontend.
+        Full RAG pipeline — yields SSE chunks to the frontend.
 
         Steps:
           1. Save user question to DB immediately
-          2. TODO: RetrievalStep (RAG) — skipped for now
-          3. Call OpenAI and stream tokens back
-          4. Save full answer to DB
+          2. Retrieve relevant chunks (hybrid KNN + BM25 in ES)
+          3. Build prompt with retrieved context
+          4. Stream LLM answer token-by-token
+          5. In parallel: generate recommended questions + auto-name session
+          6. Save full answer + sources + recommended questions to DB
+          7. Send metadata events (documents, recommended_questions) then [DONE]
         """
         # ── Step 1: Save user question to DB ─────────────────────────────────
         message_id = str(uuid.uuid4())
@@ -228,13 +305,16 @@ class ChatService:
         self.db.add(msg_row)
         await self.db.commit()
 
-        # ── Step 2: Retrieve relevant chunks from Elasticsearch ──────────────
-        chunks = await self._retrieve_chunks(message, username)
+        # ── Step 2: Retrieve ES chunks + quick_parse text in parallel ────────
+        chunks, quick_text = await asyncio.gather(
+            self._retrieve_chunks(message, username),
+            QuickParseService().get_text(session_id),
+        )
 
-        # ── Step 3: Build prompt with retrieved context ───────────────────────
-        messages = self._build_prompt(message, chunks)
+        # ── Step 3: Build prompt with both context sources ────────────────────
+        messages = self._build_prompt(message, chunks, quick_text)
 
-        # ── Step 4: Call LLM + stream tokens back to frontend ─────────────────
+        # ── Step 4: Stream LLM answer to frontend ────────────────────────────
         full_answer = ""
         try:
             stream = await client.chat.completions.create(
@@ -252,13 +332,27 @@ class ChatService:
             full_answer = error_msg
             yield f"data: {json.dumps({'content': error_msg})}\n\n"
 
-        # ── Step 5: Save full answer + source references to DB ───────────────
+        # ── Step 5: Generate recommended questions + auto-name session ────────
+        # Run both LLM calls in parallel — neither blocks the streamed answer
+        rq, _ = await asyncio.gather(
+            self._generate_recommended_questions(message, full_answer),
+            self._maybe_name_session(session_id, message),
+        )
+
+        # ── Step 6: Persist full answer + sources + recommended questions ─────
         msg_row.model_answer = full_answer
         msg_row.documents = json.dumps([
             {"filename": c["filename"], "chunk_index": c["chunk_index"]}
             for c in chunks
         ])
+        msg_row.recommended_questions = json.dumps(rq)
         await self.db.commit()
+
+        # ── Step 7: Send metadata events then signal completion ───────────────
+        if chunks:
+            yield f"data: {json.dumps({'documents': [{'filename': c['filename'], 'chunk_index': c['chunk_index']} for c in chunks]})}\n\n"
+        if rq:
+            yield f"data: {json.dumps({'recommended_questions': rq})}\n\n"
 
         yield "data: [DONE]\n\n"
 
