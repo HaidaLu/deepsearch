@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     # LLM providers
     OPENAI_API_KEY: str = ""
     DASHSCOPE_API_KEY: str = ""
+    DASHSCOPE_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    LLM_PROVIDER: str = "dashscope"
+    LLM_MODEL: str = "deepseek-chat"
+
+    # Embedding (DashScope)
+    EMBEDDING_API_KEY: str = ""
+    EMBEDDING_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    EMBEDDING_MODEL: str = "text-embedding-v4"
 
     class Config:
         env_file = ".env"

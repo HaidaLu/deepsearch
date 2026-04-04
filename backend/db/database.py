@@ -25,6 +25,7 @@ async def init_db():
     import models.user     # noqa: F401
     import models.session  # noqa: F401
     import models.message  # noqa: F401
+    import models.upload   # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
