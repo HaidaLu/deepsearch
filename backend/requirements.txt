@@ -9,5 +9,7 @@ python-multipart
 elasticsearch
 redis
 openai
+pdfplumber
+python-docx
 # Switch to asyncpg when moving to PostgreSQL in production:
 # asyncpg
