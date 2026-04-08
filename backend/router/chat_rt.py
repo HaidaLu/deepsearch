@@ -70,3 +70,29 @@ async def get_session_documents(
     """Return files currently attached to a session (from Redis)."""
     files = await QuickParseService().get_files(session_id)
     return {"documents": files, "has_documents": len(files) > 0}
+
+
+@router.delete("/sessions/{session_id}/last_message")
+async def delete_last_message(
+    session_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Delete the most recent message in a session so it can be regenerated.
+    Called by the frontend Refresh button before re-submitting the last question.
+    """
+    return await ChatService(db).delete_last_message(session_id)
+
+
+@router.delete("/sessions/{session_id}/document/{filename:path}")
+async def delete_session_document(
+    session_id: str,
+    filename: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Remove a quick-parsed file from the session's Redis store.
+    Uses {filename:path} to handle filenames with dots (e.g. report.pdf).
+    """
+    return await QuickParseService().delete_document(session_id, filename)

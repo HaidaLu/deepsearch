@@ -65,6 +65,17 @@ export default function Citations(props: { list?: API.Reference[] }) {
   const { list } = props
 
   const [read, setRead] = useState<API.Reference | null>(null)
+  const [search, setSearch] = useState('')
+
+  const filtered = useMemo(() => {
+    if (!search) return list
+    const q = search.toLowerCase()
+    return list?.filter(
+      (r) =>
+        r.document_name.toLowerCase().includes(q) ||
+        r.content_with_weight.toLowerCase().includes(q),
+    )
+  }, [list, search])
 
   return (
     <div className={styles['citations']}>
@@ -72,9 +83,11 @@ export default function Citations(props: { list?: API.Reference[] }) {
         <Input
           placeholder="Search keywords in citations"
           suffix={<img src={IconSearch} alt="search" />}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
 
-        <Button color="default" variant="outlined">
+        <Button color="default" variant="outlined" onClick={() => setSearch('')}>
           <img src={IconFilter} />
           Filter
         </Button>
@@ -83,7 +96,7 @@ export default function Citations(props: { list?: API.Reference[] }) {
       <div className={styles['citations__title']}>Selected citations</div>
 
       <div className={styles['citations__list']}>
-        {list?.map((item, index) => (
+        {filtered?.map((item, index) => (
           <CitationsItem
             key={item.id}
             item={item}

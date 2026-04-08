@@ -1,7 +1,5 @@
-import * as api from '@/api'
 import IconSendThunder from '@/assets/component/send-thunder.svg'
 import { FileOutlined } from '@ant-design/icons'
-import { useRequest } from 'ahooks'
 import { Button, Input, Space } from 'antd'
 import classNames from 'classnames'
 import { PropsWithChildren, useState } from 'react'
@@ -16,9 +14,11 @@ export default function ComSender(
     onSend?: (value: string) => void | Promise<void>
     onContract?: () => void
     sessionId?: string
+    uploadedDoc?: { document_name: string } | null
+    onUploadSuccess?: (file: File) => void
   }>,
 ) {
-  const { className, onSend, onContract, loading, sessionId, ...rest } = props
+  const { className, onSend, onContract, loading, sessionId, uploadedDoc, onUploadSuccess, ...rest } = props
   const [value, setValue] = useState('')
 
   async function send() {
@@ -28,27 +28,18 @@ export default function ComSender(
     setValue('')
   }
 
-  const uploaded = useRequest(
-    async () => {
-      if (!sessionId) return
-
-      const res = await api.session.documents({
-        session_id: sessionId,
-      })
-
-      return res.data?.documents?.[0]
-    },
-    {
-      refreshDeps: [sessionId],
-    },
-  )
-
   return (
     <div className={classNames('com-sender', className)} {...rest}>
       <Input.TextArea
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Enter your question..."
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault()
+            send()
+          }
+        }}
+        placeholder="Enter your question... (Ctrl+Enter to send)"
         autoSize={{ minRows: 2 }}
         autoFocus
       />
@@ -64,28 +55,24 @@ export default function ComSender(
 
         <Space className="com-sender__actions-right" size={12}>
           {sessionId ? (
-            uploaded.data ? (
+            uploadedDoc ? (
               <Button
                 className="com-sender__action--contract"
                 variant="text"
                 color="default"
                 shape="round"
                 disabled
-                title={uploaded.data.document_name}
+                title={uploadedDoc.document_name}
               >
                 <FileOutlined style={{ fontSize: 14 }} />
                 <span className="document-name">
-                  {uploaded.data.document_name}
+                  {uploadedDoc.document_name}
                 </span>
               </Button>
             ) : (
               <Uploader
                 sessionId={sessionId}
-                onSuccess={(file) => {
-                  uploaded.mutate({
-                    document_name: file.name,
-                  } as any)
-                }}
+                onSuccess={(file) => onUploadSuccess?.(file)}
               />
             )
           ) : null}

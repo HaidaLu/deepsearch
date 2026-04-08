@@ -46,6 +46,11 @@ class MessageItem(BaseModel):
     created_at: str
 
 
+# ── Session rename ────────────────────────────────────────────────────────────
+class RenameSessionRequest(BaseModel):
+    name: str
+
+
 # ── Repository ────────────────────────────────────────────────────────────────
 class FileItem(BaseModel):
     file_name: str

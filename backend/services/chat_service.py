@@ -13,7 +13,7 @@ import uuid
 from typing import AsyncGenerator
 
 from openai import AsyncOpenAI
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
@@ -66,6 +66,36 @@ class ChatService:
                 for s in sessions
             ]
         }
+
+    async def rename_session(self, session_id: str, name: str) -> dict:
+        result = await self.db.execute(
+            select(Session).where(Session.session_id == session_id)
+        )
+        session = result.scalar_one_or_none()
+        if not session:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Session not found")
+        session.session_name = name
+        await self.db.commit()
+        return {"session_id": session_id, "session_name": name}
+
+    async def delete_last_message(self, session_id: str) -> dict:
+        """Delete the most recent message in a session (for answer regeneration)."""
+        result = await self.db.execute(
+            select(Message)
+            .where(Message.session_id == session_id)
+            .order_by(Message.created_at.desc())
+            .limit(1)
+        )
+        message = result.scalar_one_or_none()
+        if not message:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="No messages found for this session")
+        await self.db.execute(
+            delete(Message).where(Message.id == message.id)
+        )
+        await self.db.commit()
+        return {"status": "success", "deleted_message_id": message.message_id}
 
     async def get_messages(self, session_id: str) -> list:
         result = await self.db.execute(

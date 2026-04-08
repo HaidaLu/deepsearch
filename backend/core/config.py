@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     EMBEDDING_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     EMBEDDING_MODEL: str = "text-embedding-v4"
 
+    # Volcano Engine / ByteDance ASR (speech-to-text STS proxy)
+    VOLCANO_APPID: str = ""
+    VOLCANO_ACCESS_KEY: str = ""
+
     class Config:
         env_file = ".env"
 

@@ -128,6 +128,13 @@ export default function Index() {
     onChange: onSelectChange,
   }
 
+  /* search */
+  const [search, setSearch] = useState('')
+  const filteredData = useMemo(
+    () => data?.filter((item) => item.file_name.toLowerCase().includes(search.toLowerCase())),
+    [data, search],
+  )
+
   /* upload */
   const [openUpload, setOpenUpload] = useState(false)
   const uploadRef = useRef<RepositoryUploadRef>(null)
@@ -148,6 +155,8 @@ export default function Index() {
             placeholder="Search files"
             prefix={<img src={IconSearch} />}
             style={{ width: 210 }}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
 
           <Button type="primary" onClick={() => setOpenUpload(true)}>
@@ -159,7 +168,7 @@ export default function Index() {
         <Table<IRepository>
           rowKey="id"
           columns={columns}
-          dataSource={data}
+          dataSource={filteredData}
           rowSelection={rowSelection}
           scroll={scroll}
           pagination={false}
