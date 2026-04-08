@@ -6,7 +6,6 @@
 #              → EmbeddingGen → ESIndexing → Elasticsearch
 #              → SaveToDB → PostgreSQL
 
-import io
 import logging
 import os
 
@@ -18,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.config import settings
 from db.es_client import es
 from models.upload import Upload
+from services.file_parser import parse_file, SUPPORTED_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
@@ -34,30 +34,6 @@ class DocumentService:
         self.db = db
 
     # ── Step 1: FileParser ────────────────────────────────────────────────────
-
-    def _parse_file(self, filename: str, data: bytes) -> str:
-        ext = filename.rsplit(".", 1)[-1].lower()
-        if ext == "pdf":
-            return self._parse_pdf(data)
-        elif ext == "docx":
-            return self._parse_docx(data)
-        else:
-            return data.decode("utf-8", errors="replace")
-
-    def _parse_pdf(self, data: bytes) -> str:
-        import pdfplumber
-        text_parts = []
-        with pdfplumber.open(io.BytesIO(data)) as pdf:
-            for page in pdf.pages:
-                text = page.extract_text()
-                if text:
-                    text_parts.append(text)
-        return "\n".join(text_parts)
-
-    def _parse_docx(self, data: bytes) -> str:
-        import docx
-        doc = docx.Document(io.BytesIO(data))
-        return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
 
     def _save_file(self, username: str, filename: str, data: bytes) -> None:
         user_dir = os.path.join(STORAGE_DIR, username)
@@ -134,8 +110,17 @@ class DocumentService:
     async def upload_files(self, files: list[UploadFile], username: str) -> dict:
         results = []
         for file in files:
+            ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else ""
+            if ext not in SUPPORTED_EXTENSIONS:
+                results.append({
+                    "file_name": file.filename,
+                    "status":    "unsupported",
+                    "error":     f"Unsupported file type: .{ext}",
+                })
+                continue
+
             data = await file.read()
-            text = self._parse_file(file.filename, data)
+            text = parse_file(file.filename, data)
             self._save_file(username, file.filename, data)
 
             chunks = self._chunk_text(text, file.filename, username)

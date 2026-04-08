@@ -16,8 +16,9 @@ export function Result(props: {
   isEnd?: boolean
   onSend?: (text: string) => void
   onRefrence?: (index: number) => void
+  onRefresh?: () => void
 }) {
-  const { item, isEnd, onSend, onRefrence } = props
+  const { item, isEnd, onSend, onRefrence, onRefresh } = props
 
   const shareMenu = useMemo(() => {
     return [
@@ -35,6 +36,9 @@ export function Result(props: {
       {
         key: 'email',
         label: 'Send to Email',
+        onClick: () => {
+          window.location.href = `mailto:?subject=AI%20Response&body=${encodeURIComponent(item.content ?? '')}`
+        },
       },
     ]
   }, [item.content])
@@ -114,17 +118,18 @@ export function Result(props: {
               {dayjs().format('HH:mm YYYY/MM/DD')}
             </div>
 
-            {isEnd ? null : (
+            {isEnd ? (
               <Button
                 variant="text"
                 color="primary"
                 shape="circle"
                 size="small"
                 style={{ color: 'var(--ant-color-primary)' }}
+                onClick={onRefresh}
               >
                 <img src={IconRefresh} />
               </Button>
-            )}
+            ) : null}
 
             <Button
               variant="text"
@@ -132,6 +137,7 @@ export function Result(props: {
               shape="circle"
               size="small"
               style={{ color: 'var(--ant-color-primary)' }}
+              onClick={() => window.$app.message.success('Thanks for your feedback!')}
             >
               <img src={IconTip} />
             </Button>
@@ -142,6 +148,7 @@ export function Result(props: {
               shape="circle"
               size="small"
               style={{ color: 'var(--ant-color-primary)' }}
+              onClick={() => navigator.clipboard.writeText(item.content ?? '')}
             >
               <img src={IconCopy} />
             </Button>

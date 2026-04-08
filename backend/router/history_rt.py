@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.auth import get_current_user
 from db.database import get_db
-from models.schemas import GetSessionsResponse
+from models.schemas import GetSessionsResponse, RenameSessionRequest
 from services.chat_service import ChatService
 from services.document_service import DocumentService
 
@@ -35,6 +35,17 @@ async def get_messages(
 ):
     """Get message history for a session. Java: @GetMapping("/session/{id}/messages")"""
     return await ChatService(db).get_messages(session_id)
+
+
+@router.put("/sessions/{session_id}/name")
+async def rename_session(
+    session_id: str,
+    body: RenameSessionRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Rename a session. Java: @PutMapping(\"/sessions/{id}/name\")"""
+    return await ChatService(db).rename_session(session_id, body.name)
 
 
 # ── Knowledge base (repository) ───────────────────────────────────────────────

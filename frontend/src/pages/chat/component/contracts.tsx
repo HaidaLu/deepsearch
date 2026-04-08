@@ -3,11 +3,11 @@ import IconObjectActive from '@/assets/chat/object@active.svg'
 import IconSearch from '@/assets/chat/search.svg'
 import { PlusCircleOutlined } from '@ant-design/icons'
 import { Button, Dropdown, Input, Tooltip } from 'antd'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import styles from './contracts.module.scss'
 
-function ContractItem(props: { item: API.Document }) {
-  const { item } = props
+function ContractItem(props: { item: API.Document; onRemove?: (doc: API.Document) => void }) {
+  const { item, onRemove } = props
 
   const moreMenu = useMemo(() => {
     return [
@@ -22,9 +22,10 @@ function ContractItem(props: { item: API.Document }) {
       {
         key: 'Remove',
         label: 'Remove',
+        onClick: () => onRemove?.(item),
       },
     ]
-  }, [item])
+  }, [item, onRemove])
 
   return (
     <div className={styles['contracts__item']}>
@@ -53,8 +54,14 @@ function ContractItem(props: { item: API.Document }) {
   )
 }
 
-export default function Contracts(props: { list: API.Document[] }) {
-  const { list } = props
+export default function Contracts(props: { list: API.Document[]; onRemove?: (doc: API.Document) => void }) {
+  const { list, onRemove } = props
+  const [search, setSearch] = useState('')
+
+  const filtered = useMemo(
+    () => list.filter((d) => d.document_name.toLowerCase().includes(search.toLowerCase())),
+    [list, search],
+  )
 
   return (
     <div className={styles['contracts']}>
@@ -62,6 +69,8 @@ export default function Contracts(props: { list: API.Document[] }) {
         <Input
           placeholder="Search documents"
           suffix={<img src={IconSearch} alt="search" />}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
 
         <Button color="default" variant="outlined">
@@ -73,8 +82,8 @@ export default function Contracts(props: { list: API.Document[] }) {
       <div className={styles['contracts__title']}>Selected Documents</div>
 
       <div className={styles['contracts__list']}>
-        {list.map((item) => (
-          <ContractItem key={item.document_id} item={item} />
+        {filtered.map((item) => (
+          <ContractItem key={item.document_id} item={item} onRemove={onRemove} />
         ))}
       </div>
     </div>

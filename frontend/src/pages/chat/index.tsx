@@ -7,7 +7,7 @@ import { ChatRole, ChatType } from '@/configs'
 import { deviceActions } from '@/store/device'
 import { usePageTransport } from '@/utils'
 import { useMount, useRequest, useUnmount } from 'ahooks'
-import { Button, Drawer } from 'antd'
+import { Button, Drawer, Input } from 'antd'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { proxy, useSnapshot } from 'valtio'
@@ -48,8 +48,17 @@ export default function Index() {
   })
   const { list } = useSnapshot(chat) as { list: API.ChatItem[] }
   const [documents, setDocuments] = useState<API.Document[]>([])
-  const [currentChatItem, setCurrentChatItem] = useState<API.ChatItem | null>(
-    null,
+  const [currentChatItem, setCurrentChatItem] = useState<API.ChatItem | null>(null)
+  const [rightVisible, setRightVisible] = useState(true)
+
+  // Quick-parse uploaded doc (lifted from sender so source panel can also update it)
+  const uploadedDoc = useRequest(
+    async () => {
+      if (!id) return null
+      const res = await api.session.documents({ session_id: id })
+      return res.data?.documents?.[0] ?? null
+    },
+    { refreshDeps: [id] },
   )
 
   const history = useRequest(
@@ -333,39 +342,113 @@ export default function Index() {
     return list[0]?.content ?? 'New Conversation'
   }, [list[0]])
 
+  const [editingName, setEditingName] = useState(false)
+  const [nameValue, setNameValue] = useState('')
+
+  const saveSessionName = useCallback(async () => {
+    const trimmed = nameValue.trim()
+    if (trimmed) {
+      await api.session.rename({ session_id: id!, name: trimmed })
+      sessionActions.updateKey()
+    }
+    setEditingName(false)
+  }, [id, nameValue])
+
+  const refreshChat = useCallback(async () => {
+    if (loadingRef.current) return
+    const userMsgs = chat.list.filter((o) => o.role === ChatRole.User)
+    if (!userMsgs.length) return
+    const lastQuestion = userMsgs[userMsgs.length - 1].content
+    if (!lastQuestion) return
+    // Delete last message from DB so the regenerated answer replaces it
+    try {
+      await api.session.deleteLastMessage({ session_id: id! })
+    } catch {
+      // No saved message yet (e.g. first send is still in flight) — proceed anyway
+    }
+    // Remove last assistant message from UI
+    const lastIdx = chat.list.length - 1
+    if (chat.list[lastIdx]?.role === ChatRole.Assistant) {
+      chat.list.splice(lastIdx, 1)
+    }
+    // Add a fresh assistant message and re-stream
+    chat.list.push({ id: createChatId(), role: ChatRole.Assistant, type: ChatType.Document, content: '' })
+    const target = chat.list[chat.list.length - 1]
+    await sendChat(target, lastQuestion)
+  }, [chat, sendChat, id])
+
   const [read, setRead] = useState<API.Reference | null>(null)
 
   return (
     <ComPageLayout
       sender={
         <>
-          {documents.length > 0 && <Source list={documents} />}
+          {documents.length > 0 && (
+            <Source
+              list={documents}
+              sessionId={id}
+              onRemove={async (doc) => {
+                try {
+                  await api.session.deleteDocument({ session_id: id!, filename: doc.document_name })
+                } catch {
+                  // If already gone from Redis (expired/not found), still remove from UI
+                }
+                setDocuments((prev) => prev.filter((d) => d.document_id !== doc.document_id))
+              }}
+              onUpload={(file) => uploadedDoc.mutate({ document_name: file.name } as any)}
+            />
+          )}
           <ComSender
             loading={loading}
             sessionId={id}
             onSend={send}
             onContract={() => setCurrentChatItem(null)}
+            uploadedDoc={uploadedDoc.data}
+            onUploadSuccess={(file) => uploadedDoc.mutate({ document_name: file.name } as any)}
           />
         </>
       }
       right={
-        <>
-          {currentChatItem && currentChatItem.reference?.length ? (
-            <ChatDrawer title="Citations">
-              <Citations list={currentChatItem.reference} />
-            </ChatDrawer>
-          ) : (
-            <ChatDrawer title="Documents">
-              <Contracts list={documents} />
-            </ChatDrawer>
-          )}
-        </>
+        rightVisible ? (
+          <>
+            {currentChatItem && currentChatItem.reference?.length ? (
+              <ChatDrawer title="Citations" onClose={() => setCurrentChatItem(null)}>
+                <Citations list={currentChatItem.reference} />
+              </ChatDrawer>
+            ) : (
+              <ChatDrawer title="Documents" onClose={() => setRightVisible(false)}>
+                <Contracts
+                  list={documents}
+                  onRemove={(doc) => setDocuments((prev) => prev.filter((d) => d.document_id !== doc.document_id))}
+                />
+              </ChatDrawer>
+            )}
+          </>
+        ) : null
       }
     >
       <div className={styles['chat-page']}>
         <div className={styles['chat-page__header']}>
-          <div className={styles['chat-page__header-title']}>{title}</div>
-          <Button type="text" shape="circle">
+          {editingName ? (
+            <Input
+              autoFocus
+              defaultValue={title}
+              style={{ flex: 1, marginRight: 8 }}
+              onChange={(e) => setNameValue(e.target.value)}
+              onBlur={saveSessionName}
+              onPressEnter={saveSessionName}
+            />
+          ) : (
+            <div className={styles['chat-page__header-title']}>{title}</div>
+          )}
+          <Button
+            type="text"
+            shape="circle"
+            onClick={() => {
+              setNameValue(title)
+              setEditingName(true)
+            }}
+          >
             <img src={IconEdit} />
           </Button>
         </div>
@@ -373,8 +456,12 @@ export default function Index() {
         <ChatMessage
           list={list}
           onSend={send}
-          onOpenCiations={setCurrentChatItem}
+          onOpenCiations={(item) => {
+            setCurrentChatItem(item)
+            setRightVisible(true)
+          }}
           onRefrence={setRead}
+          onRefresh={refreshChat}
         />
 
         <Drawer

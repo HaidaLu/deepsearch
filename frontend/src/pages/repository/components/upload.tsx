@@ -104,7 +104,7 @@ export default forwardRef<RepositoryUploadRef, UploadProps>(
         </Upload.Dragger>
 
         <p className={styles['repository-upload__desc']}>
-          Supports single or batch file uploads. File size cannot exceed 5MB, maximum 10 files.
+          Supports PDF, DOCX, TXT, MD, XLSX, HTML, JSON, PPTX. Max 5MB per file, up to 10 files.
         </p>
 
         <Upload

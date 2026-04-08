@@ -29,8 +29,9 @@ function AssistantMessage(props: {
   onSend?: (text: string) => void
   onOpenCiations?: () => void
   onRefrence?: (index: number) => void
+  onRefresh?: () => void
 }) {
-  const { item, isEnd, onSend, onOpenCiations, onRefrence } = props
+  const { item, isEnd, onSend, onOpenCiations, onRefrence, onRefresh } = props
 
   const id = useMemo(() => {
     if (item.type === ChatType.Document) {
@@ -75,6 +76,7 @@ function AssistantMessage(props: {
           isEnd={isEnd}
           onSend={onSend}
           onRefrence={onRefrence}
+          onRefresh={onRefresh}
         />
       </div>
     </div>
@@ -86,8 +88,9 @@ export default function ChatMessage(props: {
   onSend?: (text: string) => void
   onOpenCiations?: (item: API.ChatItem) => void
   onRefrence?: (target: API.Reference) => void
+  onRefresh?: () => void
 }) {
-  const { list, onSend, onOpenCiations, onRefrence } = props
+  const { list, onSend, onOpenCiations, onRefrence, onRefresh } = props
 
   return (
     <div className={styles['chat-message']}>
@@ -96,17 +99,19 @@ export default function ChatMessage(props: {
           return <UserMessage key={item.id} item={item} />
         }
 
+        const isEnd = list.length - 1 === index
         return (
           <AssistantMessage
             key={item.id}
             item={item}
-            isEnd={list.length - 1 === index}
+            isEnd={isEnd}
             onSend={onSend}
             onOpenCiations={() => onOpenCiations?.(item)}
             onRefrence={(index) => {
               const target = item.reference?.[index]
               if (target) onRefrence?.(target)
             }}
+            onRefresh={isEnd ? onRefresh : undefined}
           />
         )
       })}

@@ -86,6 +86,35 @@ export function quickParse(
   })
 }
 
+export function deleteLastMessage(
+  params: { session_id: string },
+  options?: AxiosRequestConfig,
+) {
+  return request.delete(`/sessions/${params.session_id}/last_message`, options)
+}
+
+export function deleteDocument(
+  params: {
+    session_id: string
+    filename: string
+  },
+  options?: AxiosRequestConfig,
+) {
+  const { session_id, filename } = params
+  return request.delete(`/sessions/${session_id}/document/${encodeURIComponent(filename)}`, options)
+}
+
+export function rename(
+  params: {
+    session_id: string
+    name: string
+  },
+  options?: AxiosRequestConfig,
+) {
+  const { session_id, name } = params
+  return request.put(`/sessions/${session_id}/name`, { name }, options)
+}
+
 export function documents(
   params: {
     session_id: string
