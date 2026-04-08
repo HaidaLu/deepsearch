@@ -11,8 +11,5 @@ redis
 openai
 pdfplumber
 python-docx
-python-pptx
-openpyxl
-httpx
 # Switch to asyncpg when moving to PostgreSQL in production:
 # asyncpg

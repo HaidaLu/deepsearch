@@ -1,0 +1,69 @@
+services:
+
+  # ── Infrastructure ────────────────────────────────────────────────────────────
+
+  elasticsearch:
+    image: elasticsearch:8.11.3
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Application ───────────────────────────────────────────────────────────────
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env          # API keys and base config
+    environment:
+      # Override localhost URLs with Docker service names
+      - ES_HOST=http://elasticsearch:9200
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/deepsearch.db
+    volumes:
+      - ./backend/storage:/app/storage    # uploaded files (persist on host)
+      - sqlite_data:/app/data             # SQLite database (named volume)
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  es_data:
+  redis_data:
+  sqlite_data:
